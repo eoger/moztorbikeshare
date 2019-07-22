@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Bikes around MozTor</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.5.1/dist/leaflet.css"
+      integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+      crossorigin=""
+    />
+    <script
+      src="https://unpkg.com/leaflet@1.5.1/dist/leaflet.js"
+      integrity="sha512-GffPMF3RvMeYyc1LWMHtK8EbPv0iNZ8/oTtHPx9/cc2ILxQ+u905qIwdpULaqDkyBKgOaB57QTMg7ztg8Jm2Og=="
+      crossorigin=""
+    ></script>
+    <style>
+      body {
+        padding: 0;
+        margin: 0;
+      }
+      html,
+      body,
+      #map {
+        height: 100%;
+        width: 100%;
+      }
+      #title {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        z-index: 999;
+        font-size: 2.4em;
+        background: rgba(140, 140, 140, 0.3);
+        padding: 5px;
+        font-family: "Helvetica";
+        color: #333;
+        border-radius: 5px;
+      }
+      .bikeTooltip {
+        opacity: 1;
+        font-size: 1.5em;
+      }
+    </style>
+    <script>
+      async function onLoad() {
+        // Configuration.
+        const MAP_CENTER_COORDINATES = [43.64708860200292, -79.39415395259859];
+        const MOZTOR_COORDINATES = [43.64724775226763, -79.39436852931978];
+        const MAX_BIKE_STATION_DISTANCE_M = 800;
+        const MAP_ZOOM = 17;
+        const mapboxToken =
+          "pk.eyJ1IjoiZW9nZXIiLCJhIjoiY2p5ZXc2MzdlMTYyMTNjcncwNHYxb2N4OCJ9.fWXRgVGuwfjjWPaOWJ1OTQ";
+        // End of configuration.
+
+        // Add map.
+        const map = L.map("map", { zoomControl: false }).setView(
+          MAP_CENTER_COORDINATES,
+          MAP_ZOOM
+        );
+        L.tileLayer(
+          `https://api.mapbox.com/styles/v1/mapbox/{id}/tiles/{z}/{x}/{y}?access_token=${mapboxToken}`,
+          {
+            attribution: `Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors,
+                              <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>,
+                              Imagery © <a href="https://www.mapbox.com/">Mapbox</a>`,
+            id: "light-v10"
+          }
+        ).addTo(map);
+
+        // Add office marker.
+        L.marker(MOZTOR_COORDINATES, {
+          icon: L.icon({
+            iconUrl:
+              // TODO: Host them ourselves.
+              "https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/240/google/146/raccoon_1f99d.png",
+            iconSize: L.point(75, 75)
+          })
+        }).addTo(map);
+
+        // Add bike stations markers.
+        let req = await fetch(
+          "https://tor.publicbikesystem.net/ube/gbfs/v1/en/station_information"
+        );
+        const stations = (await req.json()).data.stations.filter(s => {
+          return (
+            getDistance(MOZTOR_COORDINATES, [s.lat, s.lon]) <
+            MAX_BIKE_STATION_DISTANCE_M / 1000
+          );
+        });
+        req = await fetch(
+          "https://tor.publicbikesystem.net/ube/gbfs/v1/en/station_status"
+        );
+        const statuses = (await req.json()).data.stations;
+        const statusesMap = new Map();
+        for (const status of statuses) {
+          statusesMap.set(status.station_id, status);
+        }
+
+        for (const station of stations) {
+          const status = statusesMap.get(station.station_id);
+          L.marker([station.lat, station.lon], {
+            icon: L.icon({
+              iconUrl:
+                // TODO: Host them ourselves.
+                "https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/240/mozilla/36/bicycle_1f6b2.png",
+              iconSize: L.point(50, 50)
+            })
+          })
+            .bindTooltip(`${status.num_docks_available}/${station.capacity}`, {
+              permanent: true,
+              direction: "right",
+              offset: [0, -15],
+              direction: "top",
+              className: "bikeTooltip"
+            })
+            .addTo(map);
+        }
+      }
+      function getDistance([fromLat, fromLon], [toLat, toLon]) {
+        const EARTH_RADIUS_KM = 6371;
+        const toRad = n => (n * Math.PI) / 180;
+        const dLat = toRad(toLat - fromLat);
+        const dLon = toRad(toLon - fromLon);
+        fromLat = toRad(fromLat);
+        toLat = toRad(toLat);
+        const a =
+          Math.pow(Math.sin(dLat / 2), 2) +
+          Math.pow(Math.sin(dLon / 2), 2) * Math.cos(fromLat) * Math.cos(toLat);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return EARTH_RADIUS_KM * c;
+      }
+      window.addEventListener("DOMContentLoaded", onLoad);
+    </script>
+  </head>
+  <body>
+    <div id="title">Bike Share Toronto Stations</div>
+    <div id="map"></div>
+  </body>
+</html>
