@@ -45,6 +45,45 @@
       }
     </style>
     <script>
+      async function loadStationsStatuses(map, stations) {
+        const resp = await fetch(
+          "https://tor.publicbikesystem.net/ube/gbfs/v1/en/station_status"
+        );
+        const json = await resp.json();
+        const callAgainIn = (parseInt(json.ttl) + 1) * 1000;
+        setTimeout(() => {
+          loadStationsStatuses(map, stations);
+        }, callAgainIn);
+        const statuses = json.data.stations;
+        const statusesMap = new Map();
+        for (const status of statuses) {
+          statusesMap.set(status.station_id, status);
+        }
+
+        for (const station of stations) {
+          const status = statusesMap.get(station.station_id);
+          if (station.marker) {
+            // Remove previous marker.
+            map.removeLayer(station.marker);
+          }
+          station.marker = L.marker([station.lat, station.lon], {
+            icon: L.icon({
+              iconUrl:
+                // TODO: Host the images ourselves.
+                "https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/240/mozilla/36/bicycle_1f6b2.png",
+              iconSize: L.point(50, 50)
+            })
+          })
+            .bindTooltip(`${status.num_bikes_available}/${station.capacity}`, {
+              permanent: true,
+              direction: "right",
+              offset: [0, -15],
+              direction: "top",
+              className: "bikeTooltip"
+            })
+            .addTo(map);
+        }
+      }
       async function onLoad() {
         // Configuration.
         const MAP_CENTER_COORDINATES = [43.64708860200292, -79.39415395259859];
@@ -74,50 +113,23 @@
         L.marker(MOZTOR_COORDINATES, {
           icon: L.icon({
             iconUrl:
-              // TODO: Host them ourselves.
+              // TODO: Host the images ourselves.
               "https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/240/google/146/raccoon_1f99d.png",
             iconSize: L.point(75, 75)
           })
         }).addTo(map);
 
         // Add bike stations markers.
-        let req = await fetch(
+        const resp = await fetch(
           "https://tor.publicbikesystem.net/ube/gbfs/v1/en/station_information"
         );
-        const stations = (await req.json()).data.stations.filter(s => {
+        const stations = (await resp.json()).data.stations.filter(s => {
           return (
             getDistance(MOZTOR_COORDINATES, [s.lat, s.lon]) <
             MAX_BIKE_STATION_DISTANCE_M / 1000
           );
         });
-        req = await fetch(
-          "https://tor.publicbikesystem.net/ube/gbfs/v1/en/station_status"
-        );
-        const statuses = (await req.json()).data.stations;
-        const statusesMap = new Map();
-        for (const status of statuses) {
-          statusesMap.set(status.station_id, status);
-        }
-
-        for (const station of stations) {
-          const status = statusesMap.get(station.station_id);
-          L.marker([station.lat, station.lon], {
-            icon: L.icon({
-              iconUrl:
-                // TODO: Host them ourselves.
-                "https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/240/mozilla/36/bicycle_1f6b2.png",
-              iconSize: L.point(50, 50)
-            })
-          })
-            .bindTooltip(`${status.num_docks_available}/${station.capacity}`, {
-              permanent: true,
-              direction: "right",
-              offset: [0, -15],
-              direction: "top",
-              className: "bikeTooltip"
-            })
-            .addTo(map);
-        }
+        loadStationsStatuses(map, stations);
       }
       function getDistance([fromLat, fromLon], [toLat, toLon]) {
         const EARTH_RADIUS_KM = 6371;
