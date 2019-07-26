@@ -29,18 +29,28 @@
       }
       #bikeshareLogo {
         position: absolute;
-        top: 15px;
-        right: 15px;
+        top: 5px;
+        right: 5px;
         z-index: 999;
         width: 256px;
         opacity: 0.8;
       }
       .bikeTooltip {
-        font-size: 1.7em;
+        font-size: 3em;
         font-family: Helvetica;
         line-height: 0.8em;
-        padding: 3px;
-        padding-top: 6px;
+        padding-top: 10px;
+        padding-bottom: 3px;
+        border-radius: 0;
+        width: 90px;
+        text-align: center;
+        color: green;
+      }
+      .almostEmpty {
+        color: orange;
+      }
+      .empty {
+        color: red;
       }
       .officeIcon {
         opacity: 0.9;
@@ -68,18 +78,25 @@
             // Remove previous marker.
             map.removeLayer(station.marker);
           }
+          let className = "bikeTooltip";
+          if (status.num_bikes_available == 0) {
+            className += " empty";
+          } else if (status.num_bikes_available <= 3) {
+            className += " almostEmpty";
+          }
           station.marker = L.marker([station.lat, station.lon], {
             icon: L.icon({
-              iconUrl: "images/bicycle_icon.png",
-              iconSize: L.point(75, 75)
+              iconUrl: "images/Bike_Share_Toronto_logo.png",
+              iconSize: L.point(100, 100)
             })
           })
             .bindTooltip(`${status.num_bikes_available}/${station.capacity}`, {
               permanent: true,
-              direction: "right",
-              offset: [0, -30],
+              offset: [0, 0],
               direction: "center",
-              className: "bikeTooltip"
+              shadowSize: [0, 0],
+              className,
+              opacity: .95,
             })
             .addTo(map);
         }
@@ -111,7 +128,7 @@
         L.marker(MOZTOR_COORDINATES, {
           icon: L.icon({
             iconUrl: "images/office_icon.png",
-            iconSize: L.point(100, 100),
+            iconSize: L.point(128, 128),
             className: "officeIcon"
           })
         }).addTo(map);
