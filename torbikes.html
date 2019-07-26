@@ -36,8 +36,14 @@
         opacity: 0.8;
       }
       .bikeTooltip {
-        opacity: 1;
-        font-size: 1.5em;
+        font-size: 1.7em;
+        font-family: Helvetica;
+        line-height: 0.8em;
+        padding: 3px;
+        padding-top: 6px;
+      }
+      .officeIcon {
+        opacity: 0.9;
       }
     </style>
     <script>
@@ -71,8 +77,8 @@
             .bindTooltip(`${status.num_bikes_available}/${station.capacity}`, {
               permanent: true,
               direction: "right",
-              offset: [0, -22],
-              direction: "top",
+              offset: [0, -30],
+              direction: "center",
               className: "bikeTooltip"
             })
             .addTo(map);
@@ -105,7 +111,8 @@
         L.marker(MOZTOR_COORDINATES, {
           icon: L.icon({
             iconUrl: "images/office_icon.png",
-            iconSize: L.point(100, 100)
+            iconSize: L.point(100, 100),
+            className: "officeIcon"
           })
         }).addTo(map);
 
