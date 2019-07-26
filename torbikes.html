@@ -32,7 +32,7 @@
         top: 15px;
         right: 15px;
         z-index: 999;
-        font-size: 2.4em;
+        font-size: 3em;
         background: rgba(140, 140, 140, 0.3);
         padding: 5px;
         font-family: "Helvetica";
@@ -68,16 +68,14 @@
           }
           station.marker = L.marker([station.lat, station.lon], {
             icon: L.icon({
-              iconUrl:
-                // TODO: Host the images ourselves.
-                "https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/240/mozilla/36/bicycle_1f6b2.png",
-              iconSize: L.point(50, 50)
+              iconUrl: "images/bicycle_icon.png",
+              iconSize: L.point(75, 75)
             })
           })
             .bindTooltip(`${status.num_bikes_available}/${station.capacity}`, {
               permanent: true,
               direction: "right",
-              offset: [0, -15],
+              offset: [0, -22],
               direction: "top",
               className: "bikeTooltip"
             })
@@ -86,36 +84,32 @@
       }
       async function onLoad() {
         // Configuration.
-        const MAP_CENTER_COORDINATES = [43.64708860200292, -79.39415395259859];
+        const MAP_CENTER_COORDINATES = [43.64685181668232, -79.39451336860658];
         const MOZTOR_COORDINATES = [43.64724775226763, -79.39436852931978];
-        const MAX_BIKE_STATION_DISTANCE_M = 800;
-        const MAP_ZOOM = 17;
-        const mapboxToken =
-          "pk.eyJ1IjoiZW9nZXIiLCJhIjoiY2p5ZXc2MzdlMTYyMTNjcncwNHYxb2N4OCJ9.fWXRgVGuwfjjWPaOWJ1OTQ";
+        const MAX_BIKE_STATION_DISTANCE_M = 500;
+        const MAP_ZOOM = 18;
+        const maptilerKey = "05rAgoLQFjx6ZHDqZNwS";
         // End of configuration.
 
-        // Add map.
-        const map = L.map("map", { zoomControl: false }).setView(
+        // Add map to window for easier debugging.
+        const map = (window.map = L.map("map", { zoomControl: false }).setView(
           MAP_CENTER_COORDINATES,
           MAP_ZOOM
-        );
+        ));
         L.tileLayer(
-          `https://api.mapbox.com/styles/v1/mapbox/{id}/tiles/{z}/{x}/{y}?access_token=${mapboxToken}`,
+          `https://api.maptiler.com/maps/{id}/{z}/{x}/{y}@2x.png?key=${maptilerKey}`,
           {
-            attribution: `Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors,
-                              <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>,
-                              Imagery © <a href="https://www.mapbox.com/">Mapbox</a>`,
-            id: "light-v10"
+            attribution: `<a href="https://www.maptiler.com/copyright/" target="_blank">© MapTiler</a>
+                          <a href="https://www.openstreetmap.org/copyright" target="_blank">© OpenStreetMap contributors</a>`,
+            id: "basic"
           }
         ).addTo(map);
 
         // Add office marker.
         L.marker(MOZTOR_COORDINATES, {
           icon: L.icon({
-            iconUrl:
-              // TODO: Host the images ourselves.
-              "https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/240/google/146/raccoon_1f99d.png",
-            iconSize: L.point(75, 75)
+            iconUrl: "images/office_icon.png",
+            iconSize: L.point(100, 100)
           })
         }).addTo(map);
 
